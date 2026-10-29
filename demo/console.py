@@ -43,7 +43,7 @@ with sync_playwright() as pw:
     b = pw.chromium.launch()
     ctx = b.new_context(viewport={"width": 1440, "height": 900}, locale="en-US", **({"storage_state": "/tmp/state.json"} if have else {}))
     p = ctx.new_page()
-    url = f"https://developer.atlassian.com/console/myapps/{APP}/distribution"
+    url = f"https://developer.atlassian.com/console/myapps/{APP}/manage/distribution"
     p.goto(url, wait_until="domcontentloaded"); p.wait_for_timeout(8000)
     if "login" in p.url or "id.atlassian.com" in p.url:
         ensure_login(p); p.goto(url, wait_until="domcontentloaded"); p.wait_for_timeout(8000)
