@@ -1,0 +1,23 @@
+name: Record demo
+on: workflow_dispatch
+permissions:
+  contents: write
+  issues: read
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    env:
+      FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
+      FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: pip install playwright edge-tts && python -m playwright install --with-deps chromium
+      - run: python demo/record.py
+      - name: Publish
+        if: always()
+        run: |
+          cd out && zip -qr frames.zip frames marks.json || true
+          TAG=demo-${{ github.run_number }}
+          gh release create $TAG --prerelease --title "Demo recording $TAG" --notes "CI demo recording" $(ls demo.mp4 frames.zip 2>/dev/null)

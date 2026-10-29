@@ -69,12 +69,12 @@ with sync_playwright() as pw:
                     p.get_by_role("button", name=lab).first.click(timeout=4000); p.wait_for_timeout(3000); shot(p, "click-" + lab)
                     print("MENU", lab, p.inner_text("body")[:1500])
                 except Exception as e: print("noclick", lab, e)
-            ctx.storage_state(path=f"{OUT}/state.json")
+            ctx.storage_state(path="/tmp/state.json")
         elif mode == "login-check":
             login(p)
             p.goto("https://hassaanraja282.atlassian.net/browse/PAY-1", wait_until="domcontentloaded")
             p.wait_for_timeout(10000); shot(p, "pay1")
-            ctx.storage_state(path=f"{OUT}/state.json")
+            ctx.storage_state(path="/tmp/state.json")
             print(p.inner_text("body")[:1500])
     except Exception as e:
         print("ERR", e); shot(p, "error"); print(p.inner_text("body")[:800])
