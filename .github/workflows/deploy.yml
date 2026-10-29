@@ -1,0 +1,42 @@
+name: Deploy to Forge
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
+      FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+      SITE: hassaanraja282.atlassian.net
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm install -g @forge/cli
+      - run: forge settings set usage-analytics false
+      - run: forge whoami
+      - name: Register app (first run only)
+        run: |
+          if grep -q "__APP_ID__" manifest.yml; then
+            sed -i 's#  id: __APP_ID__#  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000#' manifest.yml
+            forge register "Decision Trail" --accept-terms --verbose
+            git config user.name "github-actions"
+            git config user.email "github-actions@users.noreply.github.com"
+            git add manifest.yml
+            git commit -m "Register Forge app id [skip ci]"
+            git push
+          fi
+      - run: forge lint
+      - run: forge deploy --non-interactive -e development
+      - name: Install or upgrade on site
+        run: |
+          forge install --non-interactive --site "$SITE" --product jira -e development --confirm-scopes \
+            || forge install --non-interactive --site "$SITE" --product jira -e development --upgrade --confirm-scopes
+      - run: forge install list
