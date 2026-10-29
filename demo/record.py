@@ -142,10 +142,16 @@ with sync_playwright() as pw:
         p.fill("input[name=username], #username", EMAIL); p.keyboard.press("Enter")
         p.wait_for_selector("input[type=password]", timeout=30000); p.fill("input[type=password]", PW); p.keyboard.press("Enter")
         p.wait_for_timeout(9000)
+        for _ in range(2):
+            if "security-screen" in p.url or p.locator("text=Continue without two-step verification").count():
+                p.get_by_text("Continue without two-step verification").first.click(); p.wait_for_timeout(8000)
+                print("skipped security screen ->", p.url, flush=True)
         if "mfa" in p.url or "verif" in p.inner_text("body").lower():
             shot(p, "mfa"); print("MFA PAGE", p.url, p.inner_text("body")[:600], flush=True)
             ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 90)); print("NEED_CODE", flush=True)
             p.keyboard.type(gh_code(ts)); p.keyboard.press("Enter"); p.wait_for_timeout(9000)
+            if p.locator("text=Continue without two-step verification").count():
+                p.get_by_text("Continue without two-step verification").first.click(); p.wait_for_timeout(8000)
         print("after login", p.url, flush=True)
     reset_demo_issues()
     # warm up: make sure the panel is added on each issue before recording
