@@ -58,6 +58,18 @@ with sync_playwright() as pw:
             for i in range(fields.count()): fields.nth(i).fill(PW)
             shot(p, "filled"); p.keyboard.press("Enter"); p.wait_for_timeout(8000); shot(p, "after-set")
             print(p.inner_text("body")[:800])
+        elif mode == "explore":
+            login(p)
+            p.goto("https://hassaanraja282.atlassian.net/browse/PAY-1", wait_until="domcontentloaded")
+            p.wait_for_timeout(12000); shot(p, "pay1")
+            btns = p.eval_on_selector_all("button, [role=button]", "els => els.map(e => (e.getAttribute('aria-label')||'') + ' | ' + (e.innerText||'').slice(0,40) + ' | ' + (e.getAttribute('data-testid')||''))")
+            print("BUTTONS"); print("\n".join(b for b in btns if b.strip(' |')))
+            for lab in ["Apps", "Decision Trail"]:
+                try:
+                    p.get_by_role("button", name=lab).first.click(timeout=4000); p.wait_for_timeout(3000); shot(p, "click-" + lab)
+                    print("MENU", lab, p.inner_text("body")[:1500])
+                except Exception as e: print("noclick", lab, e)
+            ctx.storage_state(path=f"{OUT}/state.json")
         elif mode == "login-check":
             login(p)
             p.goto("https://hassaanraja282.atlassian.net/browse/PAY-1", wait_until="domcontentloaded")
