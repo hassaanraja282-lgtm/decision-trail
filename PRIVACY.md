@@ -6,6 +6,6 @@ Decision Trail is an Atlassian Forge app. It runs entirely on Atlassian's infras
 
 **What it does not do.** No data leaves Atlassian. No analytics, tracking, advertising, or sharing with third parties.
 
-**Personal data.** The only personal data is the Atlassian account ID. The app follows Atlassian's personal data reporting for Forge apps, and decisions are deleted when their Jira issue is deleted or when the app is uninstalled.
+**Personal data.** The only personal data is the Atlassian account ID. Decisions are deleted when their Jira issue is deleted or when the app is uninstalled.
 
 **Contact.** Open an issue at https://github.com/hassaanraja282-lgtm/decision-trail/issues
