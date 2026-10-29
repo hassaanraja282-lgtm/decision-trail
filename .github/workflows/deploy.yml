@@ -26,7 +26,7 @@ jobs:
         run: |
           if grep -q "__APP_ID__" manifest.yml; then
             sed -i 's#  id: __APP_ID__#  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000#' manifest.yml
-            forge register "Decision Trail" --accept-terms --verbose
+            forge register "Decision Trail" --accept-terms --personal --verbose
             git config user.name "github-actions"
             git config user.email "github-actions@users.noreply.github.com"
             git add manifest.yml
