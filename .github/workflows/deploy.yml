@@ -26,7 +26,10 @@ jobs:
         run: |
           if grep -q "__APP_ID__" manifest.yml; then
             sed -i 's#  id: __APP_ID__#  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000#' manifest.yml
-            forge register "Decision Trail" --accept-terms --personal --verbose
+            (sleep 12; printf 'hassaanraja-dev\r'; sleep 12; printf '\r'; sleep 10; printf '\r'; sleep 10; printf '\r'; sleep 10; printf '\r') \
+              | script -qfec "forge register 'Decision Trail' --accept-terms" /dev/null || true
+            grep "  id:" manifest.yml
+            if grep -q "00000000-0000" manifest.yml; then echo "register failed"; exit 1; fi
             git config user.name "github-actions"
             git config user.email "github-actions@users.noreply.github.com"
             git add manifest.yml
