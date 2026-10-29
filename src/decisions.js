@@ -67,13 +67,33 @@ function search(decisions, query, { limit = 10, excludeIssue = null, minScore = 
     .slice(0, limit);
 }
 
-const NEG = /\b(not|no|never|instead|avoid|drop|stop|deprecate|remove|don't|won't)\b/i;
+const NEG_WORDS = new Set(['not', 'no', 'never', 'instead', 'avoid', 'drop', 'stop', 'deprecate', 'remove', "don't", "won't", 'without']);
 
-/** Two decisions on overlapping topics where exactly one is phrased negatively look like a conflict. */
+/** Keywords that a decision explicitly rules out ("not Mongo", "no custom auth"). */
+function negatedTerms(text) {
+  const toks = String(text || '').toLowerCase().replace(/[^a-z0-9\s'\-_.]/g, ' ').split(/\s+/).filter(Boolean);
+  const out = new Set();
+  toks.forEach((t, i) => {
+    if (!NEG_WORDS.has(t)) return;
+    for (let j = i + 1; j <= i + 3 && j < toks.length; j++) {
+      const w = toks[j].replace(/^[\-_.]+|[\-_.]+$/g, '');
+      if (w.length > 2 && !STOP.has(w) && !NEG_WORDS.has(w)) out.add(w);
+    }
+  });
+  return out;
+}
+
+/** Same topic, and one decision rules out something the other one adopts. */
 function looksConflicting(a, b) {
-  const shared = (a.keywords || keywords(a.text)).filter((w) => (b.keywords || keywords(b.text)).includes(w));
+  const ka = a.keywords || keywords(a.text);
+  const kb = b.keywords || keywords(b.text);
+  const shared = ka.filter((w) => kb.includes(w));
   if (shared.length < 2) return false;
-  return NEG.test(a.text) !== NEG.test(b.text);
+  const na = negatedTerms(a.text);
+  const nb = negatedTerms(b.text);
+  const adoptsA = ka.filter((w) => !na.has(w));
+  const adoptsB = kb.filter((w) => !nb.has(w));
+  return adoptsA.some((w) => nb.has(w)) || adoptsB.some((w) => na.has(w));
 }
 
 function makeDecision({ issueKey, text, author, authorName, source }) {
@@ -92,4 +112,4 @@ function makeDecision({ issueKey, text, author, authorName, source }) {
   };
 }
 
-module.exports = { adfToText, parseDecision, keywords, score, search, looksConflicting, makeDecision };
+module.exports = { adfToText, parseDecision, keywords, score, search, looksConflicting, negatedTerms, makeDecision };

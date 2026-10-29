@@ -117,6 +117,17 @@ exports.onComment = async (event) => {
   }
 };
 
+// Trigger: when an issue is deleted, its decisions go with it.
+exports.onIssueDeleted = async (event) => {
+  try {
+    const key = event.issue && event.issue.key;
+    if (!key) return;
+    for (const d of await allDecisions()) if (d.issueKey === key) await kvs.delete(PREFIX + d.id);
+  } catch (e) {
+    console.error('cleanup failed', e);
+  }
+};
+
 // Rovo actions
 exports.findDecisionsAction = async (payload) => {
   const all = await allDecisions();

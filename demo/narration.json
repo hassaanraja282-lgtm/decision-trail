@@ -5,6 +5,6 @@
  "If someone logs a decision that goes the other way, Decision Trail flags it as a possible conflict with the earlier call, so the team talks before it ships.",
  "On the single sign-on ticket, the panel surfaces the Okta decision and the React stack for the merchant portal. Context finds you, instead of you hunting through old threads.",
  "Capture is zero effort. Any comment that starts with DECISION is picked up by a Forge trigger. Here a new comment lands, and the decision appears in the panel.",
- "And with Rovo, you can just ask. The Decision Keeper agent searches the team's logged decisions and answers with the ticket, the person, and the date.",
+ "Decision Trail also ships a Rovo agent, Decision Keeper. On Rovo-enabled sites, anyone can ask what was already decided, and it answers from the same decision log, with the ticket, the person and the date. It can log new decisions too.",
  "Decision Trail is built entirely on Forge: an issue panel in UI Kit, a comment trigger, a Rovo agent with two actions, and Forge storage, so nothing leaves Atlassian. Stop re-litigating. Start building."
 ]

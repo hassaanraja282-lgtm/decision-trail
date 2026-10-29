@@ -12,6 +12,10 @@ modules:
       function: on-comment
       events:
         - avi:jira:commented:issue
+    - key: decision-cleanup-trigger
+      function: on-issue-deleted
+      events:
+        - avi:jira:deleted:issue
   rovo:agent:
     - key: decision-keeper
       name: Decision Keeper
@@ -66,6 +70,8 @@ modules:
       handler: index.handler
     - key: on-comment
       handler: index.onComment
+    - key: on-issue-deleted
+      handler: index.onIssueDeleted
     - key: find-decisions-fn
       handler: index.findDecisionsAction
     - key: log-decision-fn

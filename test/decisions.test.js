@@ -48,3 +48,16 @@ test('makeDecision normalizes fields', () => {
   assert.strictEqual(d.text, 'Ship it');
   assert.strictEqual(d.superseded, false);
 });
+
+test('does not flag agreeing decisions that merely contain a negation', () => {
+  const a = D.makeDecision({ issueKey: 'PAY-2', text: 'Use Okta SSO for all internal dashboards. No custom password auth.' });
+  const b = D.makeDecision({ issueKey: 'PAY-6', text: 'Merchant portal SSO goes through Okta, same as internal tools.' });
+  assert.ok(!D.looksConflicting(a, b));
+});
+
+test('flags adopting something an earlier decision ruled out', () => {
+  const a = D.makeDecision({ issueKey: 'PAY-1', text: 'Use Postgres for the billing database, not Mongo.' });
+  const b = D.makeDecision({ issueKey: 'PAY-5', text: 'Use Mongo for the billing refund database' });
+  assert.ok(D.looksConflicting(a, b));
+  assert.deepStrictEqual([...D.negatedTerms('not Mongo')], ['mongo']);
+});

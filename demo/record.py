@@ -42,6 +42,21 @@ def jira(method, path, body=None):
                                  headers={"Authorization": auth, "Content-Type": "application/json", "Accept": "application/json"})
     return urllib.request.urlopen(req).read()
 
+KEYS = {}
+def reset_demo_issues():
+    q = json.loads(jira("POST", "/rest/api/3/search/jql", {"jql": "project = PAY ORDER BY key ASC", "fields": ["summary"], "maxResults": 100}))
+    want = {"Store refund ledger for billing in MongoDB": ("ledger", "Proposal: keep the refund ledger for the billing service in MongoDB collections so we can iterate on the schema quickly."),
+            "Add SSO login to the merchant portal": ("sso", "Merchants want single sign-on into the React merchant portal.")}
+    for it in q["issues"]:
+        if it["fields"]["summary"] in want:
+            jira("DELETE", f"/rest/api/3/issue/{it['key']}"); print("deleted", it["key"], flush=True)
+    time.sleep(20)  # let the cleanup trigger remove their decisions
+    for summary, (tag, desc) in want.items():
+        body = {"fields": {"project": {"key": "PAY"}, "summary": summary, "issuetype": {"name": "Task"},
+                "description": {"type": "doc", "version": 1, "content": [{"type": "paragraph", "content": [{"type": "text", "text": desc}]}]}}}
+        KEYS[tag] = json.loads(jira("POST", "/rest/api/3/issue", body))["key"]
+    print("keys", KEYS, flush=True)
+
 nshot = [0]
 def shot(p, name):
     nshot[0] += 1
@@ -88,7 +103,7 @@ def s0(p): slide(p, "Decision Trail", "Stop re-litigating decisions in Jira.", "
 def s1(p):
     open_panel(p, "PAY-1"); shot(p, "pay1")
 def s2(p):
-    open_panel(p, "PAY-5"); p.locator("text=Already decided elsewhere").first.scroll_into_view_if_needed(); p.wait_for_timeout(800); shot(p, "pay5")
+    open_panel(p, KEYS["ledger"]); p.locator("text=Already decided elsewhere").first.scroll_into_view_if_needed(); p.wait_for_timeout(800); shot(p, "pay5")
 def s3(p):
     ta = p.locator("textarea").last
     ta.scroll_into_view_if_needed(); ta.click(); p.keyboard.type("Use Mongo for the billing refund database", delay=45)
@@ -96,33 +111,18 @@ def s3(p):
     p.wait_for_selector("text=may contradict", timeout=30000); p.wait_for_timeout(600)
     p.locator("text=may contradict").first.scroll_into_view_if_needed(); p.wait_for_timeout(600); shot(p, "conflict")
 def s4(p):
-    open_panel(p, "PAY-6"); p.locator("text=Already decided elsewhere").first.scroll_into_view_if_needed(); p.wait_for_timeout(500); shot(p, "pay6")
+    open_panel(p, KEYS["sso"]); p.locator("text=Already decided elsewhere").first.scroll_into_view_if_needed(); p.wait_for_timeout(500); shot(p, "pay6")
 def s5(p):
     adf = {"type": "doc", "version": 1, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "DECISION: Merchant portal SSO goes through Okta, same as internal tools."}]}]}
-    jira("POST", "/rest/api/3/issue/PAY-6/comment", {"body": adf})
-    p.wait_for_timeout(7000)
-    p.reload(wait_until="domcontentloaded"); p.wait_for_selector("h1", timeout=60000); p.wait_for_timeout(4000)
-    open_panel(p, "PAY-6"); shot(p, "captured")
+    jira("POST", f"/rest/api/3/issue/{KEYS['sso']}/comment", {"body": adf})
+    p.wait_for_timeout(5000)
+    open_panel(p, KEYS["sso"])
+    try: p.locator("text=Merchant portal SSO goes through Okta").last.scroll_into_view_if_needed(timeout=8000)
+    except Exception: pass
+    p.wait_for_timeout(800); shot(p, "captured")
     try: p.locator("text=Merchant portal SSO goes through Okta").last.scroll_into_view_if_needed()
     except Exception: pass
-def s6(p):
-    p.goto(f"{SITE}/jira", wait_until="domcontentloaded"); p.wait_for_timeout(5000)
-    opened = False
-    for sel in ["[data-testid*='rovo-chat'] button", "button[aria-label*='Rovo']", "button:has-text('Ask Rovo')", "button[aria-label*='Chat']", "button:has-text('Rovo')"]:
-        try: p.click(sel, timeout=2500); opened = True; break
-        except Exception: pass
-    p.wait_for_timeout(3000); shot(p, "rovo-open")
-    if not opened: raise RuntimeError("no rovo button")
-    try:
-        p.get_by_text("Decision Keeper").first.click(timeout=4000)
-    except Exception:
-        for sel in ["text=Browse agents", "text=Agents", "text=View all agents"]:
-            try: p.click(sel, timeout=2500); p.wait_for_timeout(1500); p.get_by_text("Decision Keeper").first.click(timeout=4000); break
-            except Exception: pass
-    p.wait_for_timeout(2000)
-    box = p.locator("[contenteditable=true], textarea").last
-    box.click(); p.keyboard.type("What did we decide about the billing database?", delay=35); p.keyboard.press("Enter")
-    p.wait_for_timeout(14000); shot(p, "rovo-answer")
+def s6(p): slide(p, "Rovo agent: Decision Keeper", "&ldquo;What did we decide about the billing database?&rdquo;", "rovo:agent with two Forge actions &mdash; <b>find-decisions</b> searches the decision log, <b>log-decision</b> records a new one.<br>Answers cite the Jira issue, who decided, and when. Works on any Rovo-enabled site.")
 def s7(p): slide(p, "Decision Trail", "Built 100% on Forge.", "jira:issuePanel (UI Kit) &middot; avi:jira:commented:issue trigger &middot; rovo:agent + 2 actions &middot; Forge KVS storage<br>github.com/hassaanraja282-lgtm/decision-trail")
 
 with sync_playwright() as pw:
@@ -138,10 +138,14 @@ with sync_playwright() as pw:
         ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 90)); print("NEED_CODE", flush=True)
         p.keyboard.type(gh_code(ts)); p.keyboard.press("Enter"); p.wait_for_timeout(9000)
     print("after login", p.url, flush=True)
+    reset_demo_issues()
     # warm up: make sure the panel is added on each issue before recording
-    for k in ["PAY-1", "PAY-5", "PAY-6"]:
+    for k in ["PAY-1", KEYS["ledger"], KEYS["sso"]]:
         try: open_panel(p, k)
         except Exception as e: print("warm", k, e, flush=True)
+        for sel in ["text=Dismiss Quickstart", "button[aria-label='Close Quickstart']"]:
+            try: p.click(sel, timeout=2000); p.wait_for_timeout(1500); print("dismissed quickstart", flush=True)
+            except Exception: pass
     c1.storage_state(path="/tmp/state.json"); c1.close()
 
     c2 = b.new_context(viewport={"width": 1440, "height": 900}, locale="en-US", user_agent=ua, storage_state="/tmp/state.json",
