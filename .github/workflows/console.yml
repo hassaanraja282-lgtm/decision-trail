@@ -1,0 +1,29 @@
+name: Developer console
+on:
+  workflow_dispatch:
+    inputs:
+      mode: { required: true, type: string, default: explore }
+permissions:
+  contents: write
+  issues: read
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
+      FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/atl
+          key: atl-state-${{ github.run_id }}
+          restore-keys: atl-state-
+      - run: pip install playwright && python -m playwright install --with-deps chromium
+      - run: python demo/console.py ${{ inputs.mode }}
+      - name: Publish screenshots
+        if: always()
+        run: |
+          cd out && zip -qr frames.zip frames || true
+          gh release create console-${{ github.run_number }} --prerelease --title "Console ${{ github.run_number }}" --notes "CI screenshots" frames.zip
