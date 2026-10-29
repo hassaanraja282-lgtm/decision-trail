@@ -42,4 +42,6 @@ jobs:
         run: |
           forge install --non-interactive --site "$SITE" --product jira -e development --confirm-scopes \
             || forge install --non-interactive --site "$SITE" --product jira -e development --upgrade --confirm-scopes
+      - run: forge deploy --non-interactive -e production
+      - run: forge eligibility -e production || true
       - run: forge install list
