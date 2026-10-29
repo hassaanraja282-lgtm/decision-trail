@@ -3,7 +3,11 @@ import os, sys, time, json, re, urllib.request
 from playwright.sync_api import sync_playwright
 
 EMAIL = os.environ["FORGE_EMAIL"]
-PW = os.environ.get("ATLASSIAN_PASSWORD", "")
+import hashlib
+def _derive():
+    h = hashlib.sha256(("decision-trail-demo:" + os.environ.get("FORGE_API_TOKEN", "")).encode()).hexdigest()
+    return "Dt!" + h[:6].upper() + h[6:13] + "9"
+PW = os.environ.get("ATLASSIAN_PASSWORD") or _derive()
 OUT = "out"; os.makedirs(OUT, exist_ok=True)
 mode = sys.argv[1]
 n = [0]

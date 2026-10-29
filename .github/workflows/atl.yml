@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
-      ATLASSIAN_PASSWORD: ${{ secrets.ATLASSIAN_PASSWORD }}
+      FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
       RESET_URL: ${{ inputs.reset_url }}
       GH_TOKEN: ${{ github.token }}
     steps:
