@@ -27,7 +27,7 @@ print("durations", durs, flush=True)
 
 def gh_code(after_ts):
     repo = os.environ["GITHUB_REPOSITORY"]; tok = os.environ["GH_TOKEN"]
-    for _ in range(90):
+    for _ in range(45):
         req = urllib.request.Request(f"https://api.github.com/repos/{repo}/issues/1/comments?per_page=100",
                                      headers={"Authorization": f"Bearer {tok}"})
         for c in reversed(json.load(urllib.request.urlopen(req))):
@@ -128,16 +128,25 @@ def s7(p): slide(p, "Decision Trail", "Built 100% on Forge.", "jira:issuePanel (
 with sync_playwright() as pw:
     b = pw.chromium.launch(args=["--disable-blink-features=AutomationControlled"])
     ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
-    c1 = b.new_context(viewport={"width": 1440, "height": 900}, locale="en-US", user_agent=ua)
+    KEYF = hashlib.sha256(("state-key:" + TOKEN).encode()).hexdigest()
+    ENC = os.path.expanduser("~/.cache/atl/state.enc"); os.makedirs(os.path.dirname(ENC), exist_ok=True)
+    have_state = False
+    if os.path.exists(ENC):
+        have_state = subprocess.run(["openssl", "enc", "-d", "-aes-256-cbc", "-pbkdf2", "-pass", "pass:" + KEYF, "-in", ENC, "-out", "/tmp/state.json"]).returncode == 0
+    c1 = b.new_context(viewport={"width": 1440, "height": 900}, locale="en-US", user_agent=ua, **({"storage_state": "/tmp/state.json"} if have_state else {}))
     p = c1.new_page()
-    p.goto("https://id.atlassian.com/login", wait_until="domcontentloaded"); p.wait_for_timeout(3000)
-    p.fill("input[name=username], #username", EMAIL); p.keyboard.press("Enter")
-    p.wait_for_selector("input[type=password]", timeout=30000); p.fill("input[type=password]", PW); p.keyboard.press("Enter")
-    p.wait_for_timeout(9000)
-    if "mfa" in p.url or "verif" in p.inner_text("body").lower():
-        ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 90)); print("NEED_CODE", flush=True)
-        p.keyboard.type(gh_code(ts)); p.keyboard.press("Enter"); p.wait_for_timeout(9000)
-    print("after login", p.url, flush=True)
+    p.goto(f"{SITE}/jira", wait_until="domcontentloaded"); p.wait_for_timeout(6000)
+    print("start url", p.url, flush=True)
+    if "id.atlassian.com" in p.url or "login" in p.url:
+        p.goto("https://id.atlassian.com/login", wait_until="domcontentloaded"); p.wait_for_timeout(3000)
+        p.fill("input[name=username], #username", EMAIL); p.keyboard.press("Enter")
+        p.wait_for_selector("input[type=password]", timeout=30000); p.fill("input[type=password]", PW); p.keyboard.press("Enter")
+        p.wait_for_timeout(9000)
+        if "mfa" in p.url or "verif" in p.inner_text("body").lower():
+            shot(p, "mfa"); print("MFA PAGE", p.url, p.inner_text("body")[:600], flush=True)
+            ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 90)); print("NEED_CODE", flush=True)
+            p.keyboard.type(gh_code(ts)); p.keyboard.press("Enter"); p.wait_for_timeout(9000)
+        print("after login", p.url, flush=True)
     reset_demo_issues()
     # warm up: make sure the panel is added on each issue before recording
     for k in ["PAY-1", KEYS["ledger"], KEYS["sso"]]:
@@ -147,6 +156,7 @@ with sync_playwright() as pw:
             try: p.click(sel, timeout=2000); p.wait_for_timeout(1500); print("dismissed quickstart", flush=True)
             except Exception: pass
     c1.storage_state(path="/tmp/state.json"); c1.close()
+    subprocess.run(["openssl", "enc", "-aes-256-cbc", "-pbkdf2", "-pass", "pass:" + KEYF, "-in", "/tmp/state.json", "-out", ENC], check=True)
 
     c2 = b.new_context(viewport={"width": 1440, "height": 900}, locale="en-US", user_agent=ua, storage_state="/tmp/state.json",
                        record_video_dir="/tmp/vid", record_video_size={"width": 1440, "height": 900})
