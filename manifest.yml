@@ -15,7 +15,8 @@ modules:
   rovo:agent:
     - key: decision-keeper
       name: Decision Keeper
-      description: Remembers the decisions your team already made in Jira, so nobody re-litigates them, and flags when new work contradicts an earlier call.
+      description: Remembers the decisions your team already made in Jira, so nobody
+        re-litigates them, and flags when new work contradicts an earlier call.
       prompt: |
         You are Decision Keeper, a teammate that remembers the decisions a team has made in Jira.
         Decisions are short statements captured from Jira issues (for example "DECISION: we use Postgres, not Mongo, for billing").
@@ -35,13 +36,15 @@ modules:
       name: Find past decisions
       function: find-decisions-fn
       actionVerb: GET
-      description: Search the team's logged Jira decisions by keywords and return matching decisions with issue key, author and date.
+      description: Search the team's logged Jira decisions by keywords and return
+        matching decisions with issue key, author and date.
       inputs:
         query:
           title: Query
           type: string
           required: true
-          description: A few keywords describing the topic, e.g. "database billing" or "auth sso".
+          description: A few keywords describing the topic, e.g. "database billing" or
+            "auth sso".
     - key: log-decision
       name: Log a decision
       function: log-decision-fn
@@ -75,7 +78,7 @@ app:
     name: nodejs22.x
     memoryMB: 256
     architecture: arm64
-  id: __APP_ID__
+  id: ari:cloud:ecosystem::app/e812f02b-836c-4c5c-a3f0-18fa8b21f9d0
 permissions:
   scopes:
     - read:jira-work
