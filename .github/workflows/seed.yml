@@ -1,0 +1,17 @@
+name: Seed demo data
+on: workflow_dispatch
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    env:
+      FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
+      FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+      SITE: hassaanraja282.atlassian.net
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/seed-demo.js
+      - run: npm install -g @forge/cli && forge settings set usage-analytics false
+      - run: sleep 45 && forge logs -e development --since 15m || true
