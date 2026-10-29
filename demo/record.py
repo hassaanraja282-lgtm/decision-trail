@@ -43,19 +43,32 @@ def jira(method, path, body=None):
     return urllib.request.urlopen(req).read()
 
 KEYS = {}
+OLD = []
 def reset_demo_issues():
     q = json.loads(jira("POST", "/rest/api/3/search/jql", {"jql": "project = PAY ORDER BY key ASC", "fields": ["summary"], "maxResults": 100}))
     want = {"Store refund ledger for billing in MongoDB": ("ledger", "Proposal: keep the refund ledger for the billing service in MongoDB collections so we can iterate on the schema quickly."),
             "Add SSO login to the merchant portal": ("sso", "Merchants want single sign-on into the React merchant portal.")}
     for it in q["issues"]:
         if it["fields"]["summary"] in want:
-            jira("DELETE", f"/rest/api/3/issue/{it['key']}"); print("deleted", it["key"], flush=True)
-    time.sleep(20)  # let the cleanup trigger remove their decisions
+            OLD.append(it["key"])
+            jira("PUT", f"/rest/api/3/issue/{it['key']}", {"fields": {"summary": "[old demo run] " + it["fields"]["summary"]}})
     for summary, (tag, desc) in want.items():
         body = {"fields": {"project": {"key": "PAY"}, "summary": summary, "issuetype": {"name": "Task"},
                 "description": {"type": "doc", "version": 1, "content": [{"type": "paragraph", "content": [{"type": "text", "text": desc}]}]}}}
         KEYS[tag] = json.loads(jira("POST", "/rest/api/3/issue", body))["key"]
-    print("keys", KEYS, flush=True)
+    print("keys", KEYS, "old", OLD, flush=True)
+
+def retire_old(p):
+    """Mark decisions on earlier demo-run issues as superseded, using the app's own panel."""
+    for k in OLD:
+        try:
+            open_panel(p, k)
+            for _ in range(6):
+                btn = p.get_by_role("button", name="Mark superseded")
+                if btn.count() == 0: break
+                btn.first.click(); p.wait_for_timeout(2500)
+            print("retired", k, flush=True)
+        except Exception as e: print("retire err", k, e, flush=True)
 
 nshot = [0]
 def shot(p, name):
@@ -154,6 +167,7 @@ with sync_playwright() as pw:
                 p.get_by_text("Continue without two-step verification").first.click(); p.wait_for_timeout(8000)
         print("after login", p.url, flush=True)
     reset_demo_issues()
+    retire_old(p)
     # warm up: make sure the panel is added on each issue before recording
     for k in ["PAY-1", KEYS["ledger"], KEYS["sso"]]:
         try: open_panel(p, k)
