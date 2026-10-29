@@ -1,0 +1,24 @@
+name: Atlassian browser
+on:
+  workflow_dispatch:
+    inputs:
+      mode: { required: true, type: string }
+      reset_url: { required: false, type: string, default: "" }
+permissions:
+  contents: read
+  issues: read
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
+      ATLASSIAN_PASSWORD: ${{ secrets.ATLASSIAN_PASSWORD }}
+      RESET_URL: ${{ inputs.reset_url }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install playwright && python -m playwright install --with-deps chromium
+      - run: python demo/atl.py ${{ inputs.mode }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: out, path: out/, retention-days: 3 }
