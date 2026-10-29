@@ -16,7 +16,11 @@ VOICE = "en-US-AndrewNeural"
 # ---------- narration ----------
 durs = []
 for i, t in enumerate(LINES):
-    subprocess.run(["edge-tts", "--voice", VOICE, "--rate", "+4%", "--text", t, "--write-media", f"/tmp/s{i}.mp3"], check=True)
+    for attempt in range(6):
+        r = subprocess.run(["edge-tts", "--voice", VOICE, "--rate", "+4%", "--text", t, "--write-media", f"/tmp/s{i}.mp3"])
+        if r.returncode == 0: break
+        time.sleep(5 + attempt * 5)
+    else: raise SystemExit("tts failed")
     d = float(subprocess.check_output(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f"/tmp/s{i}.mp3"]).decode())
     durs.append(d)
 print("durations", durs, flush=True)
