@@ -4,6 +4,8 @@
 
 Built for Codegeist 2026 (Apps for Software Teams, Best Agents bonus).
 
+**Install:** see [INSTALL.md](INSTALL.md) for the Jira installation link.
+
 ## The problem
 Teams make decisions in comments, meetings and Slack threads, then forget them. Months later someone reopens the same debate, or ships something that quietly contradicts an earlier call. The context exists, but nobody can find it at the moment it matters.
 
