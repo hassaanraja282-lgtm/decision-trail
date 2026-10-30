@@ -80,6 +80,23 @@ with sync_playwright() as pw:
                 print("URL", p.url); print(p.inner_text("body")[:3000]); print("=====")
             links = p.eval_on_selector_all("a", "els => els.map(e => (e.innerText||'').slice(0,60) + ' -> ' + e.href)")
             print("LINKS"); print("\n".join(l for l in links if 'billing' in l or 'subscription' in l.lower()))
+        elif mode == "billing2":
+            login(p)
+            p.goto("https://admin.atlassian.com/billing", wait_until="domcontentloaded"); p.wait_for_timeout(12000)
+            k = p.get_by_role("link", name="Manage").count() or p.get_by_text("Manage", exact=True).count()
+            print("MANAGE COUNT", k)
+            for i in range(k):
+                p.goto("https://admin.atlassian.com/billing", wait_until="domcontentloaded"); p.wait_for_timeout(10000)
+                loc = p.get_by_role("link", name="Manage")
+                if not loc.count(): loc = p.get_by_text("Manage", exact=True)
+                loc.nth(i).click(); p.wait_for_timeout(12000); shot(p, f"acct{i}")
+                print("ACCT", i, p.url); print(p.inner_text("body")[:2500]); print("=====")
+                for lab in ["Subscriptions", "Manage subscriptions"]:
+                    try:
+                        p.get_by_text(lab, exact=True).first.click(timeout=4000); p.wait_for_timeout(10000); shot(p, f"subs{i}")
+                        print("SUBS", i, p.url); print(p.inner_text("body")[:3500]); print("=====")
+                        break
+                    except Exception as e: print("nosubs", lab)
         elif mode == "login-check":
             login(p)
             p.goto("https://hassaanraja282.atlassian.net/browse/PAY-1", wait_until="domcontentloaded")
