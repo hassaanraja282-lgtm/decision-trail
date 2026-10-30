@@ -40,6 +40,9 @@ def login(p):
         print("NEED_CODE", flush=True)
         code = gh_code(ts)
         p.keyboard.type(code); p.keyboard.press("Enter"); p.wait_for_timeout(8000); shot(p, "after-code")
+    for _ in range(3):
+        if p.locator("text=Continue without two-step verification").count():
+            p.get_by_text("Continue without two-step verification").first.click(); p.wait_for_timeout(8000)
 
 with sync_playwright() as pw:
     b = pw.chromium.launch()
@@ -70,6 +73,13 @@ with sync_playwright() as pw:
                     print("MENU", lab, p.inner_text("body")[:1500])
                 except Exception as e: print("noclick", lab, e)
             ctx.storage_state(path="/tmp/state.json")
+        elif mode == "billing":
+            login(p)
+            for u in ["https://admin.atlassian.com/", "https://admin.atlassian.com/billing", "https://admin.atlassian.com/billing/subscriptions"]:
+                p.goto(u, wait_until="domcontentloaded"); p.wait_for_timeout(12000); shot(p, "billing")
+                print("URL", p.url); print(p.inner_text("body")[:3000]); print("=====")
+            links = p.eval_on_selector_all("a", "els => els.map(e => (e.innerText||'').slice(0,60) + ' -> ' + e.href)")
+            print("LINKS"); print("\n".join(l for l in links if 'billing' in l or 'subscription' in l.lower()))
         elif mode == "login-check":
             login(p)
             p.goto("https://hassaanraja282.atlassian.net/browse/PAY-1", wait_until="domcontentloaded")
